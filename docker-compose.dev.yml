@@ -1,0 +1,80 @@
+services:
+    db:
+        image: mongo:7
+        restart: always
+        entrypoint:
+            - bash
+            - -c
+            - |
+                if [ ! -f /data/db/mongo-keyfile ]; then
+                    openssl rand -base64 756 > /data/db/mongo-keyfile
+                    chmod 400 /data/db/mongo-keyfile
+                    chown mongodb:mongodb /data/db/mongo-keyfile
+                fi
+                exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --keyFile /data/db/mongo-keyfile
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: example
+            MONGO_INITDB_DATABASE: cash-db
+        ports:
+            - '27017:27017'
+        volumes:
+            - mongo_data:/data/db
+        healthcheck:
+            test: |
+                mongosh -u root -p example --authenticationDatabase admin --eval "db.adminCommand('ping')" --quiet
+            interval: 5s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
+    mongo-init:
+        image: mongo:7
+        depends_on:
+            db:
+                condition: service_healthy
+        volumes:
+            - ./mongo-keyfile:/etc/mongo-keyfile:ro
+        command: >
+            bash -c "
+            sleep 5 &&
+            mongosh --host db:27017 -u root -p example --authenticationDatabase admin --eval '
+            try {
+                var status = rs.status();
+                print(\"Replica set ya inicializado:\", status.ok);
+            } catch(e) {
+                print(\"Inicializando replica set...\");
+                var result = rs.initiate({
+                    _id: \"rs0\",
+                    members: [{ _id: 0, host: \"db:27017\" }]
+                });
+                print(\"Resultado:\", result);
+                sleep(2000);
+                print(\"Replica set listo!\");
+            }
+            '
+            "
+        restart: 'no'
+
+    api:
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        ports:
+            - '3000:3000'
+        env_file:
+            - .env
+        depends_on:
+            mongo-init:
+                condition: service_completed_successfully
+        volumes:
+            - .:/app
+            - /app/node_modules
+        dns:
+            - 8.8.8.8
+            - 8.8.4.4
+        extra_hosts:
+            - 'sandbox.smtp.mailtrap.io:54.80.103.13'
+
+volumes:
+    mongo_data:
