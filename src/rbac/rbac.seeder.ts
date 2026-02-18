@@ -31,6 +31,12 @@ export class RbacSeeder {
         const permissionsData = [
             // Users
             {
+                name: 'users.access',
+                resource: ResourceType.USERS,
+                action: ActionType.CREATE,
+                description: 'Access user module',
+            },
+            {
                 name: 'users.create',
                 resource: ResourceType.USERS,
                 action: ActionType.CREATE,
@@ -62,7 +68,12 @@ export class RbacSeeder {
             },
 
             // Roles
-
+            {
+                name: 'roles.access',
+                resource: ResourceType.ROLES,
+                action: ActionType.ACCESS,
+                description: 'Access roles module',
+            },
             {
                 name: 'roles.create',
                 resource: ResourceType.ROLES,
@@ -96,6 +107,12 @@ export class RbacSeeder {
 
             // Groups
             {
+                name: 'groups.access',
+                resource: ResourceType.GROUPS,
+                action: ActionType.ACCESS,
+                description: 'Access groups module',
+            },
+            {
                 name: 'groups.create',
                 resource: ResourceType.GROUPS,
                 action: ActionType.CREATE,
@@ -128,6 +145,12 @@ export class RbacSeeder {
 
             // Students
             {
+                name: 'students.access',
+                resource: ResourceType.STUDENTS,
+                action: ActionType.ACCESS,
+                description: 'Access students module',
+            },
+            {
                 name: 'students.create',
                 resource: ResourceType.STUDENTS,
                 action: ActionType.CREATE,
@@ -159,6 +182,12 @@ export class RbacSeeder {
             },
 
             // attendance
+            {
+                name: 'attendance.access',
+                resource: ResourceType.ATTENDANCE,
+                action: ActionType.ACCESS,
+                description: 'Access attendance module',
+            },
             {
                 name: 'attendance.create',
                 resource: ResourceType.ATTENDANCE,
@@ -276,18 +305,20 @@ export class RbacSeeder {
             const docentePermissions = [
                 'users.read',
                 'roles.read',
-                'groups.create',
+                // 'groups.create',
                 'groups.read',
-                'groups.update',
-                'groups.delete',
-                'students.create',
+                // 'groups.update',
+                // 'groups.delete',
+                // 'students.create',
+                'students.access',
                 'students.read',
                 'students.update',
-                'students.delete',
+                // 'students.delete',
+                'attendance.access',
                 'attendance.create',
                 'attendance.read',
                 'attendance.update',
-                'attendance.delete',
+                // 'attendance.delete',
             ];
 
             const permissionIds = docentePermissions

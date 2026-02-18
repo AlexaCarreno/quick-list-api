@@ -17,6 +17,7 @@ export enum ActionType {
     UPDATE = 'update',
     DELETE = 'delete',
     MANAGE = 'manage',
+    ACCESS = 'access'
 }
 
 export interface IPermission {

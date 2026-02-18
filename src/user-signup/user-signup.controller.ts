@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { EmailDto, SignupStep1Dto, SignupStep2Dto } from './user-signup.dto';
 import { UserSignupService } from './user-signup.service';
 import { ServiceResponse } from './user-signup.response-example';
+import { PublicRoute } from '../common/decorators/public-route.decorator';
 
 @ApiTags('Sign-up')
 @Controller('user-signup')
@@ -17,6 +18,7 @@ export class UserSignupController {
     constructor(private readonly signupService: UserSignupService) {}
 
     @Post('/step-one')
+    @PublicRoute()
     @ApiOperation({ summary: 'Primer paso, datos del usuario' })
     @ApiOkResponse(ServiceResponse.signupStepOneSuccess)
     @ApiConflictResponse(ServiceResponse.signupStepOneConflict)
@@ -25,6 +27,7 @@ export class UserSignupController {
     }
 
     @Patch('/step-two')
+    @PublicRoute()
     @ApiOperation({ summary: 'Segundo paso, confirmacion de registro' })
     @ApiOkResponse(ServiceResponse.signupSteoTwoSuccess)
     @ApiConflictResponse(ServiceResponse.resendCodeBadRequest)
@@ -53,6 +56,7 @@ export class UserSignupController {
     @ApiOperation({
         summary: 'Reenviar código de verificación al email del usuario',
     })
+    @PublicRoute()
     @ApiOkResponse(ServiceResponse.resendCodeSuccess)
     @ApiBadRequestResponse(ServiceResponse.resendCodeBadRequest)
     public async resentCode(@Body() { email }: EmailDto) {
