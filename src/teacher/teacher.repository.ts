@@ -67,10 +67,17 @@ export class TeacherRepository {
     async findAllWithUser(query: {
         offset?: number;
         limit?: number;
-        email?: string;
+        nameContains?: string;
         emailContains?: string;
+        documentNumberContains?: string;
     }): Promise<PaginatedResult<TeacherWithUser>> {
-        const { offset = 0, limit = 10, email, emailContains } = query;
+        const {
+            offset = 0,
+            limit = 10,
+            nameContains,
+            documentNumberContains,
+            emailContains,
+        } = query;
 
         const pipeline: PipelineStage[] = [
             {
@@ -89,10 +96,6 @@ export class TeacherRepository {
 
         const match = {};
 
-        if (email) {
-            match['user.email'] = email;
-        }
-
         if (emailContains) {
             match['user.email'] = {
                 $regex: emailContains,
@@ -100,9 +103,27 @@ export class TeacherRepository {
             };
         }
 
+        if (nameContains) {
+            match['user.name'] = {
+                $regex: nameContains,
+                $options: 'i',
+            };
+        }
+
+        if (documentNumberContains) {
+            match['documentNumber'] = {
+                $regex: documentNumberContains,
+                $options: 'i',
+            };
+        }
+
         if (Object.keys(match).length > 0) {
             pipeline.push({ $match: match });
         }
+
+        pipeline.push({
+            $sort: { createdAt: -1 },
+        });
 
         pipeline.push({
             $project: {

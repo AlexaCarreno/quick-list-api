@@ -10,11 +10,6 @@ import {
 } from 'class-validator';
 
 export class CreateTeacherDto {
-    // User fields
-    @ApiProperty({ example: '69852a854d753d27d9d5627b' })
-    @IsMongoId()
-    roleId: string;
-
     @ApiProperty({ example: 'Angie Alexandra' })
     @IsString()
     name: string;

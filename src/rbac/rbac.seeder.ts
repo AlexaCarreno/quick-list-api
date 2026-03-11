@@ -285,6 +285,11 @@ export class RbacSeeder {
         // ADMIN - Todos los permisos
         const adminRole = await this.roleRepository.findByName(RoleName.ADMIN);
         if (adminRole) {
+            // Primero limpiar
+            await this.rolePermissionRepository.removeAllFromRole(
+                adminRole._id,
+            );
+
             const allPermissionIds = Array.from(permissions.values()).map((p) =>
                 p._id.toString(),
             );
@@ -302,19 +307,25 @@ export class RbacSeeder {
             RoleName.TEACHER,
         );
         if (docenteRole) {
+            // Primero limpiar
+            await this.rolePermissionRepository.removeAllFromRole(
+                docenteRole._id,
+            );
+
             const docentePermissions = [
                 'users.read',
                 'roles.read',
                 // 'groups.create',
                 'groups.read',
+                'groups.access',
                 // 'groups.update',
                 // 'groups.delete',
                 // 'students.create',
                 'students.access',
                 'students.read',
-                'students.update',
+                // 'students.update',
                 // 'students.delete',
-                'attendance.access',
+                // 'attendance.access',
                 'attendance.create',
                 'attendance.read',
                 'attendance.update',

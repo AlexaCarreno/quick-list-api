@@ -80,4 +80,8 @@ export class RolePermissionRepository {
             .populate('roleId')
             .exec();
     }
+
+    async removeAllFromRole(roleId: string): Promise<void> {
+        await this.rolePermissionModel.deleteMany({ roleId }).exec();
+    }
 }

@@ -31,18 +31,18 @@ export class GetTeachersQueryDto {
     @Max(100)
     limit?: number = 10;
 
-    // Filtro por email del usuario base
-    @ApiPropertyOptional({ example: 'docente@mail.com' })
+    @ApiPropertyOptional()
     @IsOptional()
-    @IsEmail()
-    email?: string;
+    @IsString()
+    nameContains?: string;
 
-    // Opcional: búsqueda parcial
-    @ApiPropertyOptional({
-        example: 'gmail.com',
-        description: 'Búsqueda parcial por email',
-    })
+    @ApiPropertyOptional()
     @IsOptional()
     @IsString()
     emailContains?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    documentNumberContains?: string;
 }

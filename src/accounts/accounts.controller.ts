@@ -15,8 +15,8 @@ import { Roles } from '../rbac/decorators/role.decorator';
 import { RolesGuard } from '../rbac/guards/roles.guard';
 import { RoleName } from '../rbac/roles/role.interface';
 
-import { UserProfileService } from './user-profile.service';
-import { CreateTeacherDto } from './user-profile.dto';
+import { AccountService } from './accounts.service';
+import { CreateTeacherDto } from './accounts.dto';
 import { PermissionsGuard } from '../rbac/guards/permissions.guard';
 import { RequirePermission } from '../rbac/decorators/permission.decorator';
 import {
@@ -24,11 +24,11 @@ import {
     ResourceType,
 } from '../rbac/permission/permission.interface';
 
-@Controller('users')
-export class UserProfileController {
-    constructor(private readonly userProfileService: UserProfileService) {}
+@Controller('accounts')
+export class AccountsController {
+    constructor(private readonly accountService: AccountService) {}
 
-    @Post('/teacher')
+    @Post('/teachers')
     @Roles(RoleName.ADMIN)
     @RequirePermission(ResourceType.USERS, ActionType.CREATE)
     @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
@@ -44,22 +44,11 @@ export class UserProfileController {
         @Body() body: CreateTeacherDto,
         @CurrentUser('userId') userId: string,
     ) {
-        const response = await this.userProfileService.createTeacher(
-            body,
+        const response = await this.accountService.createAcount('teacher', {
+            data: body,
             file,
-        );
+        });
 
-        return {
-            response,
-            userId,
-            body,
-            photo: file
-                ? {
-                      originalname: file.originalname,
-                      mimetype: file.mimetype,
-                      size: file.size,
-                  }
-                : null,
-        };
+        return response;
     }
 }

@@ -12,7 +12,7 @@ import { SessionModule } from './session/session.module';
 import { StudentsModule } from './students/students.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { UserLoginModule } from './user-login/user-login.module';
-import { UserProfileModule } from './user-profile/user-profile.module';
+import { AccountsModule } from './accounts/accounts.module';
 import { UserSignupModule } from './user-signup/user-signup.module';
 import { UserModule } from './user/user.module';
 
@@ -32,7 +32,7 @@ import { UserModule } from './user/user.module';
         RBACModule,
         TeacherModule,
         AdminModule,
-        UserProfileModule,
+        AccountsModule,
     ],
     controllers: [],
     providers: [],
