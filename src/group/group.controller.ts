@@ -8,7 +8,7 @@ import {
     Post,
     Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GroupService } from './group.service';
 import { AuthPermissions } from '../common/decorators/auth-permissions.decorator';
 import {
@@ -26,18 +26,21 @@ export class GroupController {
 
     @Get()
     @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Listar todos los grupos' })
     async findAll(@Query() query: GetGroupsQueryDto) {
         return await this.groupService.findAll(query);
     }
 
     @Get(':id')
     @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Obtener grupo por ID' })
     async findOne(@Param('id') id: string) {
         return await this.groupService.findById(id);
     }
 
     @Post()
     @AuthPermissions(ResourceType.GROUPS, ActionType.CREATE, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Crear nuevo grupo' })
     async create(
         @Body() body: CreateGroupDto,
         @CurrentUser('userId') userId: string,
@@ -47,18 +50,21 @@ export class GroupController {
 
     @Patch(':id')
     @AuthPermissions(ResourceType.GROUPS, ActionType.UPDATE, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Actualizar grupo' })
     async update(@Param('id') id: string, @Body() body: UpdateGroupDto) {
         return await this.groupService.update(id, body);
     }
 
     @Patch(':id/toggle-status')
     @AuthPermissions(ResourceType.GROUPS, ActionType.UPDATE, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Activar o desactivar grupo' })
     async toggleStatus(@Param('id') id: string) {
         return await this.groupService.toggleStatus(id);
     }
 
     @Delete(':id')
     @AuthPermissions(ResourceType.GROUPS, ActionType.DELETE, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Eliminar grupo' })
     async delete(@Param('id') id: string) {
         return await this.groupService.delete(id);
     }

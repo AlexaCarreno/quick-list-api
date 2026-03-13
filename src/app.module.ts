@@ -15,6 +15,7 @@ import { UserLoginModule } from './user-login/user-login.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { UserSignupModule } from './user-signup/user-signup.module';
 import { UserModule } from './user/user.module';
+import { StudentGroupModule } from './student-group/student-group.module';
 
 @Module({
     imports: [
@@ -33,6 +34,7 @@ import { UserModule } from './user/user.module';
         TeacherModule,
         AdminModule,
         AccountsModule,
+        StudentGroupModule,
     ],
     controllers: [],
     providers: [],
