@@ -1,88 +1,65 @@
-import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import {
-    ApiBadRequestResponse,
-    ApiBearerAuth,
-    ApiOkResponse,
-    ApiOperation,
-} from '@nestjs/swagger';
-import {
-    CreateGroupDto,
-    GroupIdDto,
-    StatusDto,
-    UpdateGroupDto,
-} from './group.dto';
-import { ServiceResponse } from './group.response-example';
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Query,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { GroupService } from './group.service';
+import { AuthPermissions } from '../common/decorators/auth-permissions.decorator';
+import {
+    ActionType,
+    ResourceType,
+} from '../rbac/permission/permission.interface';
+import { RoleName } from '../rbac/roles/role.interface';
+import { CreateGroupDto, GetGroupsQueryDto, UpdateGroupDto } from './group.dto';
+import { CurrentUser } from '../rbac/decorators/current-user.decorator';
 
-import { GetUser } from '../jwt/jwt.decorators';
-import { JwtPayload } from '../jwt/jwt.interface';
-
-@Controller('group')
+@ApiTags('Groups')
+@Controller('groups')
 export class GroupController {
     constructor(private readonly groupService: GroupService) {}
 
-    @Post('/')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Crear un grupo' })
-    @ApiOkResponse(ServiceResponse.createGroupSuccess)
-    @ApiBadRequestResponse(ServiceResponse.groupBadRequest)
-    public async createGroup(
-        @Body() group: CreateGroupDto,
-        @GetUser() user: JwtPayload,
-    ) {
-        const { userId } = user;
-        return await this.groupService.createGroup(userId, group);
+    @Get()
+    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN])
+    async findAll(@Query() query: GetGroupsQueryDto) {
+        return await this.groupService.findAll(query);
     }
 
-    @Get('/:groupId')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Obtener un grupo por su identificador' })
-    @ApiOkResponse(ServiceResponse.findOneGroupSuccess)
-    @ApiBadRequestResponse(ServiceResponse.groupNotFound)
-    public async findOneGroup(
-        @Param('groupId') groupId: string,
-        @GetUser() user: JwtPayload,
-    ) {
-        const { userId } = user;
-        return await this.groupService.findOne(groupId, userId);
+    @Get(':id')
+    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN])
+    async findOne(@Param('id') id: string) {
+        return await this.groupService.findById(id);
     }
 
-    @Get('/')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Obtener todos los grupos de un usuario.' })
-    @ApiOkResponse(ServiceResponse.getAllGroupsSuccess)
-    public async findAll(@GetUser() user: JwtPayload) {
-        const { userId } = user;
-        return await this.groupService.findAll(userId);
+    @Post()
+    @AuthPermissions(ResourceType.GROUPS, ActionType.CREATE, [RoleName.ADMIN])
+    async create(
+        @Body() body: CreateGroupDto,
+        @CurrentUser('userId') userId: string,
+    ) {
+        return await this.groupService.create(body, userId);
     }
 
-    @Put('/:groupId')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'actualizar datos de un grupo' })
-    @ApiOkResponse(ServiceResponse.updateGroupSuccess)
-    public async updateGroup(
-        @Param() { groupId }: GroupIdDto,
-        @Body() group: UpdateGroupDto,
-        @GetUser() user: JwtPayload,
-    ) {
-        const { userId } = user;
-        return await this.groupService.updateGroup(userId, groupId, group);
+    @Patch(':id')
+    @AuthPermissions(ResourceType.GROUPS, ActionType.UPDATE, [RoleName.ADMIN])
+    async update(@Param('id') id: string, @Body() body: UpdateGroupDto) {
+        return await this.groupService.update(id, body);
     }
 
-    @Patch('/:groupId/status')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'activar o archivar un grupo.' })
-    @ApiOkResponse(ServiceResponse.updateGroupSuccess)
-    public async changeStatus(
-        @Param() { groupId }: GroupIdDto,
-        @Body() { status }: StatusDto,
-        @GetUser() user: JwtPayload,
-    ) {
-        const { userId } = user;
-        return await this.groupService.updateGroupStatus(
-            userId,
-            groupId,
-            status,
-        );
+    @Patch(':id/toggle-status')
+    @AuthPermissions(ResourceType.GROUPS, ActionType.UPDATE, [RoleName.ADMIN])
+    async toggleStatus(@Param('id') id: string) {
+        return await this.groupService.toggleStatus(id);
+    }
+
+    @Delete(':id')
+    @AuthPermissions(ResourceType.GROUPS, ActionType.DELETE, [RoleName.ADMIN])
+    async delete(@Param('id') id: string) {
+        return await this.groupService.delete(id);
     }
 }

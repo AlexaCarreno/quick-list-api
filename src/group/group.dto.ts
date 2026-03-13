@@ -1,50 +1,116 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
-import { GroupStatus } from './group.interface';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsInt, IsMongoId, IsString } from 'class-validator';
 
-export class CreateGroupDto {
-    @ApiProperty({ example: 'Unidades Tecgnologicas de Santander' })
-    @IsString()
-    @IsNotEmpty()
-    institutionName: string;
+import { Transform, Type } from 'class-transformer';
+import {
+    IsArray,
+    IsDateString,
+    IsNumber,
+    IsOptional,
+    Max,
+    Min,
+    ValidateNested,
+} from 'class-validator';
+import { DayOfWeek, GroupStatus, Shift } from './group.interface';
 
-    @ApiProperty({ example: 'Arquitectura de software' })
-    @IsString()
-    @IsNotEmpty()
-    subject: string;
+export class ScheduleDto {
+    @ApiProperty({
+        enum: DayOfWeek,
+    })
+    @IsEnum(DayOfWeek)
+    dayOfWeek: DayOfWeek;
 
-    @ApiProperty({ example: 'E-195' })
+    @ApiProperty({ example: '6:00' })
     @IsString()
-    @IsNotEmpty()
-    referenceCode: string;
+    startTime: string;
+
+    @ApiProperty({ example: '7:30' })
+    @IsString()
+    endTime: string;
+
+    @ApiProperty({ enum: Shift })
+    @IsEnum(Shift)
+    shift: Shift;
 }
 
-export class GroupIdDto {
-    @ApiProperty()
+export class CreateGroupDto {
+    @ApiProperty() @IsString() referenceCode: string;
+    @ApiProperty() @IsString() subject: string;
+    @ApiProperty() @IsString() color: string;
+    @ApiProperty() @IsString() period: string;
+
+    @ApiProperty() @IsDateString() startDate: string;
+    @ApiProperty() @IsDateString() endDate: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Transform(({ value }) => parseFloat(value))
+    @IsNumber()
+    @Min(0)
+    @Max(1)
+    minAttendanceThreshold?: number;
+
+    @ApiPropertyOptional({ type: [ScheduleDto] })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ScheduleDto)
+    schedules?: ScheduleDto[];
+
+    @ApiPropertyOptional()
+    @IsOptional()
     @IsMongoId()
-    @IsNotEmpty()
-    groupId: string;
+    teacherId?: string;
 }
 
 export class UpdateGroupDto {
-    @ApiProperty({ example: 'Institution name' })
-    @IsString()
-    @IsNotEmpty()
-    institutionName: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() referenceCode?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() subject?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() color?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() period?: string;
 
-    @ApiProperty({ example: 'Subject name' })
-    @IsString()
-    @IsNotEmpty()
-    subject: string;
+    @ApiPropertyOptional() @IsOptional() @IsDateString() startDate?: string;
+    @ApiPropertyOptional() @IsOptional() @IsDateString() endDate?: string;
 
-    @ApiProperty({ example: 'reference code' })
-    @IsString()
-    @IsNotEmpty()
-    referenceCode: string;
+    @ApiPropertyOptional({ enum: GroupStatus })
+    @IsOptional()
+    @IsEnum(GroupStatus)
+    status?: GroupStatus;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Transform(({ value }) => parseFloat(value))
+    @IsNumber()
+    @Min(0)
+    @Max(1)
+    minAttendanceThreshold?: number;
+
+    @ApiPropertyOptional({ type: [ScheduleDto] })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ScheduleDto)
+    schedules?: ScheduleDto[];
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsMongoId()
+    teacherId?: string;
 }
 
-export class StatusDto {
-    @ApiProperty({ enum: GroupStatus })
-    @IsEnum(GroupStatus)
-    status: GroupStatus;
+export class GetGroupsQueryDto {
+    @IsOptional()
+    @Transform(({ value }) => parseInt(value))
+    @IsInt()
+    limit?: number;
+
+    @IsOptional()
+    @Transform(({ value }) => parseInt(value))
+    @IsInt()
+    offset?: number;
+
+    @IsOptional() @IsString() referenceCode?: string;
+    @IsOptional() @IsString() subject?: string;
+    @IsOptional() @IsString() period?: string;
+    @IsOptional() @IsEnum(GroupStatus) status?: GroupStatus;
 }

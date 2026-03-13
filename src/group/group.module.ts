@@ -16,13 +16,8 @@ import { GroupService } from './group.service';
             },
         ]),
     ],
+    providers: [GroupService, GroupRepository],
     controllers: [GroupController],
-    providers: [
-        GroupService,
-        {
-            provide: 'IGroupRepository',
-            useClass: GroupRepository,
-        },
-    ],
+    exports: [GroupService, GroupRepository],
 })
 export class GroupModule {}

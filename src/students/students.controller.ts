@@ -33,8 +33,7 @@ export class StudentController {
     @Get()
     @AuthPermissions(ResourceType.USERS, ActionType.READ, [RoleName.ADMIN])
     async findAll(@Query() query: GetStudentsQueryDto) {
-        const { students, total } = await this.studentService.findAll(query);
-        return { data: students, total };
+        return await this.studentService.findAll(query);
     }
 
     @Get(':id')

@@ -79,7 +79,16 @@ export class StudentService {
     }
 
     async findAll(query: GetStudentsQueryDto) {
-        return this.studentRepository.findAll(query);
+        const { students, total } = await this.studentRepository.findAll(query);
+        const { limit = 10, offset = 0 } = query;
+        return {
+            metadata: {
+                total,
+                limit,
+                offset,
+            },
+            students,
+        };
     }
 
     async findById(id: string) {

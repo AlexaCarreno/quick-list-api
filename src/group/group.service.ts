@@ -1,111 +1,124 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateGroupDto, UpdateGroupDto } from './group.dto';
 import {
-    GroupStatus,
-    ICreateGroup,
-    IGroupRepository,
-    IUpdateGroup,
-} from './group.interface';
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { CreateGroupDto, GetGroupsQueryDto, UpdateGroupDto } from './group.dto';
+import { GroupStatus, IGroup } from './group.interface';
+import { GroupRepository } from './group.repository';
 
 @Injectable()
 export class GroupService {
     constructor(
-        @Inject('IGroupRepository')
-        private readonly groupRepository: IGroupRepository,
+        private readonly groupRepository: GroupRepository,
+        @InjectConnection() private readonly connection: Connection,
     ) {}
 
-    async createGroup(userId: string, group: CreateGroupDto) {
-        const newGroup: ICreateGroup = {
-            userId,
-            ...group,
-        };
-        const savedGroup = await this.groupRepository.create(newGroup);
-
-        const {
-            _id,
-            institutionName,
-            subject,
-            referenceCode,
-            status,
-            createdAt,
-            updatedAt,
-        } = savedGroup;
-
-        return {
-            _id,
-            institutionName,
-            subject,
-            referenceCode,
-            status,
-            createdAt,
-            updatedAt,
-        };
-    }
-
-    async findOne(groupId: string, userId: string) {
-        const group = await this.groupRepository.findById(userId, groupId);
-
-        if (!group) {
-            throw new NotFoundException(
-                `El grupo con Id: '${groupId}' no fue encontrado.`,
+    async create(dto: CreateGroupDto, createdBy: string) {
+        const existing = await this.groupRepository.findByReferenceCode(
+            dto.referenceCode,
+        );
+        if (existing) {
+            throw new ConflictException(
+                `Ya existe un grupo con el código ${dto.referenceCode}.`,
             );
         }
 
+        const session = await this.connection.startSession();
+        session.startTransaction();
+
+        try {
+            const group = await this.groupRepository.create(
+                {
+                    ...dto,
+                    startDate: new Date(dto.startDate),
+                    endDate: new Date(dto.endDate),
+                    createdBy: createdBy as any,
+                    teacherId: (dto.teacherId as any) ?? null,
+                },
+                session,
+            );
+
+            await session.commitTransaction();
+            return group;
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
+    }
+
+    async findAll(query: GetGroupsQueryDto) {
+        const { groups, total } = await this.groupRepository.findAll(query);
+        const { limit = 10, offset = 0 } = query;
+
+        return {
+            metadata: {
+                total,
+                limit,
+                offset,
+            },
+            groups,
+        };
+    }
+
+    async findById(id: string) {
+        const group = await this.groupRepository.findByIdWithTeacher(id);
+        if (!group) throw new NotFoundException('Grupo no encontrado.');
         return group;
     }
 
-    async findAll(userId: string) {
-        return await this.groupRepository.findAll(userId);
-    }
+    async update(id: string, dto: UpdateGroupDto) {
+        const group = await this.groupRepository.findById(id);
+        if (!group) throw new NotFoundException('Grupo no encontrado.');
 
-    async updateGroup(userId: string, groupId: string, group: UpdateGroupDto) {
-        const dataToUpdate: IUpdateGroup = {
-            groupId,
-            userId,
-            dataToUpdate: { ...group },
-        };
-        const updatedGroup = await this.groupRepository.update(dataToUpdate);
-        if (!updatedGroup) {
-            throw new NotFoundException('Grupo no encontrado.');
+        // Verificar conflicto de referenceCode si se está cambiando
+        if (dto.referenceCode && dto.referenceCode !== group.referenceCode) {
+            const existing = await this.groupRepository.findByReferenceCode(
+                dto.referenceCode,
+            );
+            if (existing) {
+                throw new ConflictException(
+                    `Ya existe un grupo con el código ${dto.referenceCode}.`,
+                );
+            }
         }
-        const {
-            _id,
-            institutionName,
-            subject,
-            referenceCode,
-            status,
-            createdAt,
-            updatedAt,
-        } = updatedGroup;
 
-        return {
-            _id,
-            institutionName,
-            subject,
-            referenceCode,
-            status,
-            createdAt,
-            updatedAt,
-        };
+        const { startDate, endDate, teacherId, ...rest } = dto;
+
+        const updateData: Partial<IGroup> = { ...rest };
+
+        if (dto.startDate) updateData.startDate = new Date(dto.startDate);
+        if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+        if (dto.teacherId) updateData.teacherId = dto.teacherId as any;
+
+        return this.groupRepository.updateById(id, updateData);
     }
 
-    async updateGroupStatus(
-        userId: string,
-        groupId: string,
-        status: GroupStatus,
-    ) {
-        const dataToUpdate: IUpdateGroup = {
-            userId,
-            groupId,
-            dataToUpdate: { status },
-        };
+    async toggleStatus(id: string) {
+        const group = await this.groupRepository.findById(id);
+        if (!group) throw new NotFoundException('Grupo no encontrado.');
 
-        const updatedGroup = await this.groupRepository.update(dataToUpdate);
-        if (!updatedGroup) {
-            throw new NotFoundException('Grupo no encontrado.');
-        }
-        return updatedGroup;
+        const newStatus =
+            group.status === GroupStatus.ACTIVE
+                ? GroupStatus.INACTIVE
+                : GroupStatus.ACTIVE;
+
+        return this.groupRepository.updateById(id, { status: newStatus });
     }
 
-    // todo: add delete group?
+    async delete(id: string) {
+        const group = await this.groupRepository.findById(id);
+        if (!group) throw new NotFoundException('Grupo no encontrado.');
+
+        // Por ahora solo verificamos que el grupo exista
+        // Cuando tengamos student_group y asistencia
+        // agregaremos las validaciones aquí
+        await this.groupRepository.deleteById(id);
+
+        return { message: 'Grupo eliminado correctamente.' };
+    }
 }
