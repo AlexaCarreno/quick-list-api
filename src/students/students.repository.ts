@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { DeleteResult, Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { IStudent, STUDENT_MODEL_NAME } from './students.interface';
-
+import { GetStudentsQueryDto } from './students.dto';
 @Injectable()
 export class StudentRepository {
     constructor(
@@ -10,45 +10,61 @@ export class StudentRepository {
         private readonly studentModel: Model<IStudent>,
     ) {}
 
-    async create(studentData: Partial<IStudent>): Promise<IStudent> {
-        const createdStudent = new this.studentModel(studentData);
-        return createdStudent.save();
+    async create(data: Partial<IStudent>, session?: ClientSession) {
+        const [student] = await this.studentModel.create([data], { session });
+        return student;
     }
 
-    async findAll(groupId: string): Promise<IStudent[]> {
-        return this.studentModel.find({ groupId }).exec();
-    }
-
-    async findById(id: string): Promise<IStudent | null> {
+    async findById(id: string) {
         return this.studentModel.findById(id).exec();
     }
 
-    async findManyByIds(groupId: string, studentIds: string[]) {
-        return await this.studentModel.find({
-            groupId,
-            _id: { $in: studentIds },
-        });
+    async findByEmail(email: string) {
+        return this.studentModel.findOne({ email }).exec();
     }
 
-    async update(
+    async findByDocumentNumber(documentNumber: string) {
+        return this.studentModel.findOne({ documentNumber }).exec();
+    }
+
+    async updateById(
         id: string,
-        updateData: Partial<IStudent>,
-    ): Promise<IStudent | null> {
+        data: Partial<IStudent>,
+        session?: ClientSession,
+    ) {
         return this.studentModel
-            .findByIdAndUpdate(id, updateData, { new: true })
+            .findByIdAndUpdate(id, { $set: data }, { new: true, session })
             .exec();
     }
 
-    async deleteMany(
-        groupId: string,
-        studentIds: string[],
-    ): Promise<DeleteResult> {
-        return await this.studentModel
-            .deleteMany({ groupId: groupId, _id: { $in: studentIds } })
-            .exec();
-    }
+    async findAll(query: GetStudentsQueryDto) {
+        const {
+            limit = 10,
+            offset = 0,
+            name,
+            email,
+            documentNumber,
+            career,
+        } = query;
 
-    async findOne(filters: { _id: string; groupId: string }) {
-        return await this.studentModel.findOne({ ...filters });
+        const filter: Record<string, any> = {};
+
+        if (name) filter.name = { $regex: name, $options: 'i' };
+        if (email) filter.email = { $regex: email, $options: 'i' };
+        if (documentNumber)
+            filter.documentNumber = { $regex: documentNumber, $options: 'i' };
+        if (career) filter.career = { $regex: career, $options: 'i' };
+
+        const [students, total] = await Promise.all([
+            this.studentModel
+                .find(filter)
+                .skip(offset)
+                .limit(limit)
+                .sort({ createdAt: -1 })
+                .exec(),
+            this.studentModel.countDocuments(filter).exec(),
+        ]);
+
+        return { students, total };
     }
 }

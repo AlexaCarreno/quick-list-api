@@ -7,70 +7,103 @@ import {
     Matches,
     IsMongoId,
     IsOptional,
+    Max,
+    IsInt,
+    Min,
+    IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Types } from 'mongoose';
+import { Transform } from 'class-transformer';
 
-export class CreateStudentDto {
-    @ApiProperty({ description: 'DNI del estudiante', example: '123456789' })
-    @IsString()
-    @IsNotEmpty()
-    dni: string;
+export class GetStudentsQueryDto {
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Transform(({ value }) => parseInt(value))
+    @IsInt()
+    limit?: number;
 
-    @ApiProperty({ description: 'Nombre del estudiante', example: 'Juan' })
-    @IsString()
-    @IsNotEmpty()
-    name: string;
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Transform(({ value }) => parseInt(value))
+    @IsInt()
+    offset?: number;
 
-    @ApiProperty({ description: 'Apellido del estudiante', example: 'Pérez' })
-    @IsString()
-    @IsNotEmpty()
-    lastName: string;
-
-    @ApiProperty({ description: 'Fecha de nacimiento', example: '2005-05-15' })
-    @IsDateString()
-    birthday: Date;
-
-    @ApiProperty({
-        description: 'Correo electrónico',
-        example: 'juan@example.com',
-    })
-    @IsEmail()
-    email: string;
-
-    @ApiProperty({ description: 'Número de teléfono', example: '3001234567' })
-    @IsString()
-    @Matches(/^[0-9]{7,15}$/)
-    phone: string;
-}
-
-// create-student-with-image.dto.ts
-export class CreateStudentWithImageDto extends CreateStudentDto {
-    @ApiProperty({
-        description: 'Imagen del estudiante',
-        type: 'string',
-        format: 'binary',
-    })
-    image: any;
-}
-
-export class DeleteStudentsDto {
-    @ApiProperty({
-        description: 'Identificadores de estudiantes a eliminar',
-        type: 'array',
-        format: 'objectId',
-        example: [new Types.ObjectId()],
-    })
-    @IsString({ each: true })
-    studentIds: string[];
-}
-
-export class UpdateStudentDto extends PartialType(CreateStudentDto) {
-    @ApiPropertyOptional({
-        description: 'URL o nombre de la imagen del estudiante',
-        type: 'string',
-    })
+    @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    image?: string;
+    name?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    email?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    documentNumber?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    career?: string;
+}
+
+export class CreateStudentDto {
+    @ApiProperty() @IsString() name: string;
+    @ApiProperty() @IsString() lastName: string;
+    @ApiProperty() @IsEmail() email: string;
+    @ApiProperty() @IsString() documentNumber: string;
+    @ApiProperty() @IsDateString() birthday: string;
+    @ApiProperty() @IsString() career: string;
+
+    @ApiProperty()
+    @Transform(({ value }) => parseInt(value))
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    semester: number;
+
+    @ApiPropertyOptional() @IsOptional() @IsString() phone?: string;
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    residentialAddress?: string;
+
+    // ← agregar esto
+    @ApiPropertyOptional({ type: 'string', format: 'binary' })
+    @IsOptional()
+    photo?: any;
+}
+
+export class UpdateStudentDto {
+    @ApiPropertyOptional() @IsOptional() @IsString() name?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() lastName?: string;
+    @ApiPropertyOptional() @IsOptional() @IsEmail() email?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() documentNumber?: string;
+    @ApiPropertyOptional() @IsOptional() @IsDateString() birthday?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() career?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Transform(({ value }) =>
+        value !== undefined ? parseInt(value) : undefined,
+    )
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    semester?: number;
+
+    @ApiPropertyOptional() @IsOptional() @IsString() phone?: string;
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    residentialAddress?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsBoolean()
+    @Transform(({ value }) => value === 'true' || value === true)
+    removePhoto?: boolean;
 }

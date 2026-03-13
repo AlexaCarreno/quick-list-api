@@ -32,6 +32,12 @@ export class UserLoginService {
             );
         }
 
+        if (!user.state) {
+            throw new ForbiddenException(
+                'Tu cuenta ha sido desactivada. Contacta al administrador.',
+            );
+        }
+
         const { _id: userId } = user;
 
         const ip = req.ip || req.connection.remoteAddress || '';

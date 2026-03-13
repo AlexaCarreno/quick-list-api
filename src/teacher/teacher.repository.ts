@@ -161,4 +161,21 @@ export class TeacherRepository {
             limit,
         };
     }
+
+    async findById(id: string): Promise<ITeacher | null> {
+        return await this.teacherModel.findById(id).exec();
+    }
+
+    async updateById(
+        id: string,
+        data: UpdateQuery<ITeacher>,
+        session?: ClientSession,
+    ): Promise<ITeacher> {
+        const updated = await this.teacherModel
+            .findByIdAndUpdate(id, data, { new: true, session })
+            .exec();
+
+        if (!updated) throw new NotFoundException('Teacher not found');
+        return updated;
+    }
 }

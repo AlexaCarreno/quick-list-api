@@ -1,22 +1,22 @@
+import { Schema } from 'mongoose';
 
-export const STUDENT_MODEL_NAME = 'Student'
-export const STUDENT_COLLECTION_NAME = 'student'
+export const STUDENT_MODEL_NAME = 'Student';
+export const STUDENT_COLLECTION_NAME = 'student';
 
 export interface IStudent {
-    _id: string;
-    groupId: string;
-    dni: string;
+    _id?: Schema.Types.ObjectId;
     name: string;
     lastName: string;
-    birthday: Date;
     email: string;
-    phone: string;
-    image: string;
-    face_encodings: number[]
-    status: string;
+    documentNumber: string;
+    birthday: Date;
+    career: string; // programa académico
+    semester: number; // semestre actual (1-12)
+    phone?: string;
+    residentialAddress?: string;
+    photo?: string;
+    faceProfileId?: string; // ref → PostgreSQL (se llena después con el microservicio)
+    state: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
-
-export const VALID_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg']
-

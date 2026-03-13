@@ -8,6 +8,8 @@ import { TeacherRepository } from './teacher.repository';
 import { TeacherSchema } from './teacher.schema';
 import { TeacherService } from './teacher.service';
 import { TeacherController } from './teacher.controller';
+import { StorageService } from '../common/service/storage.service';
+import { UserModule } from '../user/user.module';
 
 @Module({
     imports: [
@@ -18,9 +20,10 @@ import { TeacherController } from './teacher.controller';
                 collection: TEACHER_COLLECTION_NAME,
             },
         ]),
+        UserModule,
     ],
     controllers: [TeacherController],
-    providers: [TeacherRepository, TeacherService],
+    providers: [TeacherRepository, TeacherService, StorageService],
     exports: [TeacherService],
 })
 export class TeacherModule {}

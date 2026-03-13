@@ -1,120 +1,83 @@
 import {
-    BadRequestException,
     Body,
     Controller,
-    Delete,
     Get,
-    HttpCode,
-    HttpStatus,
-    MaxFileSizeValidator,
     Param,
-    ParseFilePipe,
+    Patch,
     Post,
-    Put,
+    Query,
     UploadedFile,
     UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import { memoryStorage } from 'multer';
+import { ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { AuthPermissions } from '../common/decorators/auth-permissions.decorator';
+import {
+    ActionType,
+    ResourceType,
+} from '../rbac/permission/permission.interface';
+import { RoleName } from '../rbac/roles/role.interface';
 import {
     CreateStudentDto,
-    CreateStudentWithImageDto,
-    DeleteStudentsDto,
+    GetStudentsQueryDto,
+    UpdateStudentDto,
 } from './students.dto';
-import { IStudent } from './students.interface';
-import { StudentsService } from './students.service';
+import { StudentService } from './students.service';
+import { imageFileFilter } from '../common/utils/file-filter';
 
-@Controller('group/:groupId/students')
-export class StudentsController {
-    constructor(private readonly studentService: StudentsService) {}
+@ApiTags('Students')
+@Controller('students')
+export class StudentController {
+    constructor(private readonly studentService: StudentService) {}
 
     @Get()
-    async findAll(@Param('groupId') groupId: string): Promise<IStudent[]> {
-        return this.studentService.getAllStudents(groupId);
+    @AuthPermissions(ResourceType.USERS, ActionType.READ, [RoleName.ADMIN])
+    async findAll(@Query() query: GetStudentsQueryDto) {
+        const { students, total } = await this.studentService.findAll(query);
+        return { data: students, total };
     }
 
-    @Get('/:id')
-    async findOne(@Param('id') id: string): Promise<IStudent> {
-        return this.studentService.getStudentById(id);
+    @Get(':id')
+    @AuthPermissions(ResourceType.USERS, ActionType.READ, [RoleName.ADMIN])
+    async findOne(@Param('id') id: string) {
+        return await this.studentService.findById(id);
     }
 
-    @Post('/')
-    @ApiBearerAuth('accessToken')
+    @Post()
+    @AuthPermissions(ResourceType.USERS, ActionType.CREATE, [RoleName.ADMIN])
     @ApiConsumes('multipart/form-data')
-    @ApiBody({
-        description: 'Datos estudiante + imagen',
-        type: CreateStudentWithImageDto,
-    })
     @UseInterceptors(
-        FileInterceptor('image', {
-            storage: memoryStorage(),
+        FileInterceptor('photo', {
+            limits: { fileSize: 3 * 1024 * 1024 },
+            fileFilter: imageFileFilter,
         }),
     )
     async create(
-        @Param('groupId') groupId: string,
+        @UploadedFile() file: Express.Multer.File,
         @Body() body: CreateStudentDto,
-        @UploadedFile(
-            new ParseFilePipe({
-                validators: [
-                    new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-                ],
-            }),
-        )
-        file: Express.Multer.File,
-    ): Promise<IStudent> {
-        if (!file) {
-            throw new BadRequestException('Image file is required');
-        }
-
-        return await this.studentService.createStudent(
-            groupId,
-            { ...body },
-            file,
-        );
+    ) {
+        return await this.studentService.create(body, file);
     }
 
-    @Put('/:id')
-    @ApiBearerAuth('accessToken')
+    @Patch(':id')
+    @AuthPermissions(ResourceType.USERS, ActionType.UPDATE, [RoleName.ADMIN])
     @ApiConsumes('multipart/form-data')
-    @ApiBody({
-        description:
-            'Datos del estudiante a actualizar (opcionalmente con nueva imagen)',
-        type: CreateStudentWithImageDto,
-    })
     @UseInterceptors(
-        FileInterceptor('image', {
-            storage: memoryStorage(),
+        FileInterceptor('photo', {
+            limits: { fileSize: 3 * 1024 * 1024 },
         }),
     )
     async update(
-        @Param('groupId') groupId: string,
         @Param('id') id: string,
-        @Body() body: any,
-        @UploadedFile(
-            new ParseFilePipe({
-                validators: [
-                    new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-                ],
-                fileIsRequired: false, // 👈 permite actualizar sin subir imagen
-            }),
-        )
-        file?: Express.Multer.File,
-    ): Promise<IStudent> {
-        return await this.studentService.updateStudent(groupId, id, body, file);
+        @UploadedFile() file: Express.Multer.File,
+        @Body() body: UpdateStudentDto,
+    ) {
+        return await this.studentService.update(id, body, file);
     }
 
-    @Delete('/')
-    @HttpCode(HttpStatus.OK)
-    async remove(
-        @Param('groupId') groupId: string,
-        @Body() { studentIds }: DeleteStudentsDto,
-    ) {
-        const { deleteds } = await this.studentService.deleteStudent(
-            groupId,
-            studentIds,
-        );
-
-        return { deleteds };
+    @Patch(':id/toggle-state')
+    @AuthPermissions(ResourceType.USERS, ActionType.UPDATE, [RoleName.ADMIN])
+    async toggleState(@Param('id') id: string) {
+        return await this.studentService.toggleState(id);
     }
 }

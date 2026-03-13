@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
 import {
     IsBoolean,
     IsDateString,
@@ -7,6 +7,7 @@ import {
     IsMongoId,
     IsOptional,
     IsString,
+    MinLength,
 } from 'class-validator';
 
 export class CreateTeacherDto {
@@ -60,4 +61,26 @@ export class CreateTeacherDto {
     })
     @IsOptional()
     photo?: any;
+}
+
+export class CreateAdminDto {
+    @ApiProperty() @IsString() name: string;
+    @ApiProperty() @IsString() lastName: string;
+    @ApiProperty() @IsEmail() email: string;
+    @ApiProperty() @IsDateString() birthday: string;
+    @ApiProperty() @IsString() @MinLength(8) password: string;
+
+    @ApiPropertyOptional() @IsOptional() @IsString() documentNumber?: string;
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    residentialAddress?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() position?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() department?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsBoolean()
+    @Transform(({ value }) => value === 'true' || value === true)
+    changePassword?: boolean = false;
 }

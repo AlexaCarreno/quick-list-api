@@ -3,24 +3,66 @@ import { IStudent } from './students.interface';
 
 export const StudentSchema = new Schema<IStudent>(
     {
-        groupId: { type: String, required: true },
-        dni: { type: String, required: true },
-        name: { type: String, required: true },
-        lastName: { type: String, required: true },
-        birthday: { type: Date, required: true },
-        email: { type: String, required: true },
-        phone: { type: String, required: true },
-        image: { type: String, required: false, default: null },
-        face_encodings: {
-            type: [Number],
-            required: true,
-        },
-        status: {
+        name: {
             type: String,
             required: true,
-            enum: ['active', 'inactive'],
-            default: 'active',
+            trim: true,
+        },
+        lastName: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
+            lowercase: true,
+        },
+        documentNumber: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+        },
+        birthday: {
+            type: Date,
+            required: true,
+        },
+        career: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        semester: {
+            type: Number,
+            required: true,
+            min: 1,
+            max: 12,
+        },
+        phone: {
+            type: String,
+            trim: true,
+        },
+        residentialAddress: {
+            type: String,
+            trim: true,
+        },
+        photo: {
+            type: String,
+        },
+        faceProfileId: {
+            type: String,
+            default: null,
+        },
+        state: {
+            type: Boolean,
+            default: true,
         },
     },
-    { versionKey: false, timestamps: true },
+    {
+        timestamps: true,
+        versionKey: false,
+    },
 );

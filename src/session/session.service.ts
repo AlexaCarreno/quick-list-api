@@ -172,6 +172,10 @@ export class SessionService {
             throw new NotFoundException('Usuario no encontrado');
         }
 
+        if (!user.state) {
+            throw new UnauthorizedException('Tu cuenta ha sido desactivada.');
+        }
+
         // Obtener roles ACTUALES del usuario (pueden haber cambiado)
         const userRoles = await this.getUserRoles(userId);
 

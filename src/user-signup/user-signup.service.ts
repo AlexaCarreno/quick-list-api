@@ -13,6 +13,7 @@ import { SignupStep1Dto, SignupStep2Dto } from './user-signup.dto';
 import { signupVerificationTemplate } from './user-signup.template';
 import { RbacService } from '../rbac/services/rbac.service';
 import { RoleName } from '../rbac/roles/role.interface';
+import { AccountService } from '../accounts/accounts.service';
 
 @Injectable()
 export class UserSignupService {
@@ -21,46 +22,33 @@ export class UserSignupService {
         private readonly sessionService: SessionService,
         private readonly emailService: EmailsService,
         private readonly rbacService: RbacService,
+        private readonly accountService: AccountService,
     ) {}
 
     public async handleStepOne(stepOne: SignupStep1Dto) {
         const { name, lastName, birthdate, email, password } = stepOne;
 
-        const encryptedPassword = await hashPassword(password);
-        const verificationCode = generateAlphaNumericCode(6);
-
-        const userToSave: Partial<IUser> = {
-            name,
-            lastName,
-            birthday: new Date(birthdate),
-            email,
-            password: encryptedPassword,
-            photo: '',
-            state: true,
-            verification: {
-                status: false,
-                code: verificationCode,
-                updatedAt: new Date(),
+        // Crear usuario + perfil admin en una sola transacción
+        const result = await this.accountService.createAcount('admin', {
+            data: {
+                name,
+                lastName,
+                birthday: new Date(birthdate).toISOString(),
+                email,
+                password,
+                changePassword: false,
+                // documentNumber, position, department son opcionales
+                // el admin podrá completarlos después desde su perfil
             },
-            changePassword: false,
-        };
-
-        // Crear usuario (sin roleId)
-        const newUser = await this.userService.createUser(userToSave);
-
-        if (!newUser) {
-            throw new UnprocessableEntityException(
-                'The user could not be created.',
-            );
-        }
-
-        // Asignar rol ESTUDIANTE por defecto
-        await this.rbacService.assignRoleToUser(
-            newUser._id!.toString(),
-            RoleName.ADMIN,
-        );
+        });
 
         // Enviar código de verificación
+        const verificationCode = generateAlphaNumericCode(6);
+        await this.userService.updateVerificationCode(
+            result.userId.toString(),
+            verificationCode,
+        );
+
         const template = signupVerificationTemplate(verificationCode);
         await this.emailService.sendMail(
             email,
@@ -70,10 +58,10 @@ export class UserSignupService {
 
         return {
             newUser: {
-                _id: newUser._id,
-                email: newUser.email,
-                name: newUser.name,
-                lastName: newUser.lastName,
+                _id: result._id,
+                email,
+                name,
+                lastName,
             },
         };
     }

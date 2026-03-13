@@ -1,230 +1,169 @@
 import {
-    BadRequestException,
+    ConflictException,
     Injectable,
     NotFoundException,
-    UnprocessableEntityException,
 } from '@nestjs/common';
-import { promises as fs } from 'fs';
-import { extname, join } from 'path';
+import {
+    CreateStudentDto,
+    GetStudentsQueryDto,
+    UpdateStudentDto,
+} from './students.dto';
+import { Connection } from 'mongoose';
 import { StorageService } from '../common/service/storage.service';
-import { ConfigService } from '../config/config.service';
-import { UpdateStudentDto } from './students.dto';
-import { IStudent, VALID_MIMETYPES } from './students.interface';
+import { InjectConnection } from '@nestjs/mongoose';
 import { StudentRepository } from './students.repository';
+import { IStudent } from './students.interface';
 
 @Injectable()
-export class StudentsService {
+export class StudentService {
     constructor(
         private readonly studentRepository: StudentRepository,
-        private readonly configService: ConfigService,
         private readonly storageService: StorageService,
+        @InjectConnection() private readonly connection: Connection,
     ) {}
 
-    async createStudent(
-        group_Id: string,
-        data: Partial<IStudent>,
-        file: Express.Multer.File,
-    ): Promise<any> {
-        if (!VALID_MIMETYPES.includes(file.mimetype)) {
-            throw new BadRequestException('Invalid file format');
-        }
-
-        data.groupId = group_Id;
-
-        const payload = {
-            fieldname: file.fieldname,
-            originalname: file.originalname,
-            encoding: file.encoding,
-            mimetype: file.mimetype,
-            buffer: file.buffer.toString('base64'),
-            size: file.size,
-        };
-
-        const response = await fetch(
-            `${this.configService.get('python_service_url')}/face-encoding`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            },
+    async create(dto: CreateStudentDto, file?: Express.Multer.File) {
+        // Verificar duplicados antes de abrir transacción
+        const existingEmail = await this.studentRepository.findByEmail(
+            dto.email,
         );
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`Python error: ${error.detail}`);
+        if (existingEmail) {
+            throw new ConflictException(
+                'Ya existe un estudiante con ese correo.',
+            );
         }
 
-        const results = await response.json();
-
-        data.face_encodings = results.encodings;
-
-        const student = await this.studentRepository.create(data);
-
-        const {
-            _id,
-            groupId,
-            dni,
-            birthday,
-            name,
-            lastName,
-            email,
-            phone,
-            status,
-            createdAt,
-            updatedAt,
-        } = student;
-
-        const filename = `${
-            student._id
-        }-${Date.now()}-${crypto.randomUUID()}${extname(file.originalname)}`;
-        const relativePath = join('storage', filename);
-        const absolutePath = join(process.cwd(), relativePath);
-        try {
-            await fs.mkdir(join(process.cwd(), './', 'storage'), {
-                recursive: true,
-            });
-            await fs.writeFile(absolutePath, file.buffer);
-        } catch (error) {
-            console.error('Error writing file:', error);
-            throw new UnprocessableEntityException('Error saving image file');
-        }
-
-        await this.studentRepository.update(_id, { image: relativePath });
-
-        return {
-            _id,
-            groupId,
-            dni,
-            birthday,
-            name,
-            lastName,
-            email,
-            phone,
-            status,
-            createdAt,
-            updatedAt,
-            image: filename,
-        };
-    }
-
-    async getAllStudents(groupId: string): Promise<IStudent[]> {
-        return this.studentRepository.findAll(groupId);
-    }
-
-    async getStudentById(id: string): Promise<IStudent> {
-        const student = await this.studentRepository.findById(id);
-        if (!student) {
-            throw new NotFoundException(`Student with ID ${id} not found`);
-        }
-        return student;
-    }
-
-    async updateStudent(
-        groupId: string,
-        studentId: string,
-        body: UpdateStudentDto,
-        file?: Express.Multer.File,
-    ): Promise<IStudent> {
-        // 1️⃣ Buscar estudiante existente
-        const existing = await this.studentRepository.findOne({
-            _id: studentId,
-            groupId,
-        });
-
-        if (!existing) {
-            throw new NotFoundException('Estudiante no encontrado');
-        }
-
-        // Validar formato de archivo si se envía
-        if (file && !VALID_MIMETYPES.includes(file.mimetype)) {
-            throw new BadRequestException('Invalid file format');
-        }
-
-        // Si se envía una nueva imagen, reemplazarla
-        let imagePath = existing.image;
-
-        if (file) {
-            // Eliminar imagen anterior si existía
-            if (existing.image) {
-                try {
-                    await fs.unlink(join(process.cwd(), existing.image));
-                } catch (err) {
-                    console.warn(
-                        'No se pudo eliminar imagen anterior:',
-                        err.message,
-                    );
-                }
-            }
-
-            // Guardar nueva imagen
-            const filename = `${studentId}-${Date.now()}-${crypto.randomUUID()}${extname(
-                file.originalname,
-            )}`;
-            const relativePath = join('storage', filename);
-            const absolutePath = join(process.cwd(), relativePath);
-
-            try {
-                await fs.mkdir(join(process.cwd(), 'storage'), {
-                    recursive: true,
-                });
-                await fs.writeFile(absolutePath, file.buffer);
-                imagePath = relativePath;
-            } catch (error) {
-                console.error('Error writing file:', error);
-                throw new UnprocessableEntityException(
-                    'Error saving image file',
+        if (dto.documentNumber) {
+            const existingDoc =
+                await this.studentRepository.findByDocumentNumber(
+                    dto.documentNumber,
+                );
+            if (existingDoc) {
+                throw new ConflictException(
+                    'Ya existe un estudiante con ese documento.',
                 );
             }
         }
 
-        // Actualizar registro
-        const updated = await this.studentRepository.update(studentId, {
-            ...body,
-            image: imagePath,
-        });
+        const session = await this.connection.startSession();
+        session.startTransaction();
+        let photoUrl: string | undefined;
 
-        if (!updated) {
-            throw new NotFoundException('No se pudo actualizar el estudiante');
+        try {
+            if (file) {
+                const { url } = await this.storageService.saveFile(
+                    file,
+                    'students',
+                );
+                photoUrl = url;
+            }
+
+            const student = await this.studentRepository.create(
+                {
+                    ...dto,
+                    birthday: new Date(dto.birthday),
+                    photo: photoUrl,
+                },
+                session,
+            );
+
+            await session.commitTransaction();
+            return student;
+        } catch (err) {
+            await session.abortTransaction();
+            if (photoUrl) await this.storageService.deleteFile(photoUrl);
+            throw err;
+        } finally {
+            session.endSession();
         }
-
-        return updated;
     }
 
-    async deleteStudent(
-        groupId: string,
-        studentIds: string[],
-    ): Promise<{ deleteds: number }> {
-        const students = await this.studentRepository.findManyByIds(
-            groupId,
-            studentIds,
-        );
+    async findAll(query: GetStudentsQueryDto) {
+        return this.studentRepository.findAll(query);
+    }
 
-        if (!students || students.length === 0) {
-            throw new NotFoundException(
-                'No se encontraron estudiantes para eliminar.',
-            );
-        }
+    async findById(id: string) {
+        const student = await this.studentRepository.findById(id);
+        if (!student) throw new NotFoundException('Estudiante no encontrado.');
+        return student;
+    }
 
-        for (const student of students) {
-            if (student.image) {
-                try {
-                    const absolutePath = join(process.cwd(), student.image);
-                    await fs.unlink(absolutePath);
-                } catch (error) {
-                    console.error(error);
-                }
+    async update(
+        id: string,
+        dto: UpdateStudentDto,
+        file?: Express.Multer.File,
+    ) {
+        const session = await this.connection.startSession();
+        session.startTransaction();
+        let newPhotoUrl: string | undefined;
+
+        try {
+            const student = await this.studentRepository.findById(id);
+            if (!student)
+                throw new NotFoundException('Estudiante no encontrado.');
+
+            if (dto.email && dto.email !== student.email) {
+                const existing = await this.studentRepository.findByEmail(
+                    dto.email,
+                );
+                if (existing)
+                    throw new ConflictException('Ese correo ya está en uso.');
             }
+
+            if (
+                dto.documentNumber &&
+                dto.documentNumber !== student.documentNumber
+            ) {
+                const existing =
+                    await this.studentRepository.findByDocumentNumber(
+                        dto.documentNumber,
+                    );
+                if (existing)
+                    throw new ConflictException(
+                        'Ese documento ya está en uso.',
+                    );
+            }
+
+            const { removePhoto, birthday, ...rest } = dto;
+
+            const updateData: Partial<IStudent> = { ...rest };
+
+            if (birthday) {
+                updateData.birthday = new Date(birthday);
+            }
+
+            if (file) {
+                const { url } = await this.storageService.replaceFile(
+                    student.photo ?? '',
+                    file,
+                    'students',
+                );
+                newPhotoUrl = url;
+                updateData.photo = newPhotoUrl;
+            } else if (removePhoto && student.photo) {
+                await this.storageService.deleteFile(student.photo);
+                updateData.photo = undefined;
+            }
+
+            const updated = await this.studentRepository.updateById(
+                id,
+                updateData,
+                session,
+            );
+            await session.commitTransaction();
+            return updated;
+        } catch (err) {
+            await session.abortTransaction();
+            if (newPhotoUrl) await this.storageService.deleteFile(newPhotoUrl);
+            throw err;
+        } finally {
+            session.endSession();
         }
+    }
 
-        const deletedStudent = await this.studentRepository.deleteMany(
-            groupId,
-            studentIds,
-        );
-
-        return {
-            deleteds: deletedStudent.deletedCount ?? 0,
-        };
+    async toggleState(id: string) {
+        const student = await this.studentRepository.findById(id);
+        if (!student) throw new NotFoundException('Estudiante no encontrado.');
+        return this.studentRepository.updateById(id, { state: !student.state });
     }
 }

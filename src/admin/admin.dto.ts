@@ -12,7 +12,7 @@ import {
     MinLength,
 } from 'class-validator';
 
-export class GetTeachersQueryDto {
+export class GetAdminsQueryDto {
     @ApiPropertyOptional({
         example: 0,
         description: 'Número de registros a omitir',
@@ -50,7 +50,8 @@ export class GetTeachersQueryDto {
     documentNumberContains?: string;
 }
 
-export class UpdateTeacherDto {
+export class UpdateAdminDto {
+    // Campos de User
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
@@ -74,30 +75,9 @@ export class UpdateTeacherDto {
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
-    documentNumber?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    residentialAddress?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    professionalTitle?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    professionalLicenseNumber?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
     @MinLength(8)
     password?: string;
 
-    // Viene como string desde FormData → convertir a boolean
     @ApiPropertyOptional()
     @IsOptional()
     @IsBoolean()
@@ -109,4 +89,25 @@ export class UpdateTeacherDto {
     @IsBoolean()
     @Transform(({ value }) => value === 'true' || value === true)
     removePhoto?: boolean;
+
+    // Campos de Admin
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    documentNumber?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsString()
+    residentialAddress?: string;
+
+    @ApiPropertyOptional({ example: 'Coordinador académico' })
+    @IsOptional()
+    @IsString()
+    position?: string;
+
+    @ApiPropertyOptional({ example: 'Rectoría' })
+    @IsOptional()
+    @IsString()
+    department?: string;
 }

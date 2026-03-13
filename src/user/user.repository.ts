@@ -65,4 +65,14 @@ export class UserRepository {
             .findOneAndUpdate({ _id: userId }, dataToUpdate, { new: true })
             .exec();
     }
+
+    public async updateById(
+        userId: string,
+        data: Record<string, any>,
+        session?: ClientSession,
+    ): Promise<IUser | null> {
+        return await this.userModel
+            .findByIdAndUpdate(userId, { $set: data }, { new: true, session })
+            .exec();
+    }
 }
