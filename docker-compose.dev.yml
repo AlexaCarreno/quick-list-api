@@ -27,6 +27,8 @@ services:
             timeout: 5s
             retries: 5
             start_period: 10s
+        networks:
+            - quicklist-network
 
     mongo-init:
         image: mongo:7
@@ -55,6 +57,8 @@ services:
             '
             "
         restart: 'no'
+        networks:
+            - quicklist-network       
 
     api:
         build:
@@ -75,6 +79,14 @@ services:
             - 8.8.4.4
         extra_hosts:
             - 'sandbox.smtp.mailtrap.io:54.80.103.13'
+        networks:
+            - quicklist-network
 
 volumes:
     mongo_data:
+
+
+networks:
+  quicklist-network:
+    name: quicklist-network
+    driver: bridge
