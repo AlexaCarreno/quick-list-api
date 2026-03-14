@@ -114,4 +114,11 @@ export class StudentGroupRepository {
         const count = await this.countByGroupId(groupId);
         return count > 0;
     }
+
+    async insertMany(
+        data: Partial<IStudentGroup>[],
+        session?: ClientSession,
+    ): Promise<IStudentGroup[]> {
+        return await this.studentGroupModel.insertMany(data, { session });
+    }
 }

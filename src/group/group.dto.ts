@@ -94,23 +94,28 @@ export class UpdateGroupDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    @IsMongoId()
-    teacherId?: string;
+    @Transform(({ value }) => (value === 'null' ? null : value))
+    teacherId?: string | null;
 }
 
 export class GetGroupsQueryDto {
+    @ApiPropertyOptional()
     @IsOptional()
     @Transform(({ value }) => parseInt(value))
     @IsInt()
     limit?: number;
 
+    @ApiPropertyOptional()
     @IsOptional()
     @Transform(({ value }) => parseInt(value))
     @IsInt()
     offset?: number;
 
-    @IsOptional() @IsString() referenceCode?: string;
-    @IsOptional() @IsString() subject?: string;
-    @IsOptional() @IsString() period?: string;
-    @IsOptional() @IsEnum(GroupStatus) status?: GroupStatus;
+    @ApiPropertyOptional() @IsOptional() @IsString() referenceCode?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() subject?: string;
+    @ApiPropertyOptional() @IsOptional() @IsString() period?: string;
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsEnum(GroupStatus)
+    status?: GroupStatus;
 }

@@ -75,7 +75,6 @@ export class GroupService {
         const group = await this.groupRepository.findById(id);
         if (!group) throw new NotFoundException('Grupo no encontrado.');
 
-        // Verificar conflicto de referenceCode si se está cambiando
         if (dto.referenceCode && dto.referenceCode !== group.referenceCode) {
             const existing = await this.groupRepository.findByReferenceCode(
                 dto.referenceCode,
@@ -91,9 +90,13 @@ export class GroupService {
 
         const updateData: Partial<IGroup> = { ...rest };
 
-        if (dto.startDate) updateData.startDate = new Date(dto.startDate);
-        if (dto.endDate) updateData.endDate = new Date(dto.endDate);
-        if (dto.teacherId) updateData.teacherId = dto.teacherId as any;
+        if (startDate) updateData.startDate = new Date(startDate);
+        if (endDate) updateData.endDate = new Date(endDate);
+
+        // teacherId !== undefined cubre tanto string como null
+        if (teacherId !== undefined) {
+            updateData.teacherId = teacherId as any;
+        }
 
         return this.groupRepository.updateById(id, updateData);
     }

@@ -17,6 +17,7 @@ import {
 } from '../rbac/permission/permission.interface';
 import { RoleName } from '../rbac/roles/role.interface';
 import {
+    AddStudentsToGroupDto,
     AddStudentToGroupDto,
     GetGroupStudentsQueryDto,
 } from './student-group.dto';
@@ -70,5 +71,15 @@ export class StudentGroupController {
             groupId,
             studentId,
         );
+    }
+
+    @Post('bulk')
+    @AuthPermissions(ResourceType.GROUPS, ActionType.UPDATE, [RoleName.ADMIN])
+    @ApiOperation({ summary: 'Vincular múltiples estudiantes a un grupo' })
+    async addStudents(
+        @Param('groupId') groupId: string,
+        @Body() body: AddStudentsToGroupDto,
+    ) {
+        return await this.studentGroupService.addStudentsToGroup(groupId, body);
     }
 }

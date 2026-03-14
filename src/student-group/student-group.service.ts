@@ -9,9 +9,11 @@ import { GroupRepository } from '../group/group.repository';
 import { Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
 import {
+    AddStudentsToGroupDto,
     AddStudentToGroupDto,
     GetGroupStudentsQueryDto,
 } from './student-group.dto';
+import { IStudentGroup } from './student-group.interface';
 
 @Injectable()
 export class StudentGroupService {
@@ -123,5 +125,55 @@ export class StudentGroupService {
             studentGroup._id!.toString(),
             { allowed: !studentGroup.allowed },
         );
+    }
+
+    async addStudentsToGroup(groupId: string, dto: AddStudentsToGroupDto) {
+        const group = await this.groupRepository.findById(groupId);
+        if (!group) throw new NotFoundException('Grupo no encontrado.');
+
+        const session = await this.connection.startSession();
+        session.startTransaction();
+
+        try {
+            // Filtrar estudiantes válidos y no duplicados
+            const toInsert: Partial<IStudentGroup>[] = [];
+
+            for (const studentId of dto.studentIds) {
+                const student =
+                    await this.studentRepository.findById(studentId);
+                if (!student) continue;
+
+                const existing =
+                    await this.studentGroupRepository.findByStudentAndGroup(
+                        studentId,
+                        groupId,
+                    );
+                if (existing) continue;
+
+                toInsert.push({
+                    studentId: studentId as any,
+                    groupId: groupId as any,
+                    allowed: true,
+                });
+            }
+
+            if (toInsert.length === 0) {
+                await session.abortTransaction();
+                return { linked: 0, total: dto.studentIds.length };
+            }
+
+            const results = await this.studentGroupRepository.insertMany(
+                toInsert,
+                session,
+            );
+
+            await session.commitTransaction();
+            return { linked: results.length, total: dto.studentIds.length };
+        } catch (err) {
+            await session.abortTransaction();
+            throw err;
+        } finally {
+            session.endSession();
+        }
     }
 }

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsInt, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsInt, IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class AddStudentToGroupDto {
     @ApiProperty()
@@ -35,4 +35,12 @@ export class GetGroupStudentsQueryDto {
     @IsOptional()
     @IsString()
     career?: string;
+}
+
+
+export class AddStudentsToGroupDto {
+    @ApiProperty({ type: [String] })
+    @IsArray()
+    @IsMongoId({ each: true })
+    studentIds: string[];
 }
