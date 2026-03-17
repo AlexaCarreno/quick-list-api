@@ -16,6 +16,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { UserSignupModule } from './user-signup/user-signup.module';
 import { UserModule } from './user/user.module';
 import { StudentGroupModule } from './student-group/student-group.module';
+import { FaceModule } from './face/face.module';
 
 @Module({
     imports: [
@@ -35,6 +36,7 @@ import { StudentGroupModule } from './student-group/student-group.module';
         AdminModule,
         AccountsModule,
         StudentGroupModule,
+        FaceModule,
     ],
     controllers: [],
     providers: [],

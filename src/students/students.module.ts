@@ -9,6 +9,7 @@ import { StudentSchema } from './students.schema';
 import { StorageService } from '../common/service/storage.service';
 import { StudentController } from './students.controller';
 import { StudentService } from './students.service';
+import { FaceModule } from '../face/face.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { StudentService } from './students.service';
                 collection: STUDENT_COLLECTION_NAME,
             },
         ]),
+        FaceModule,
     ],
     providers: [StudentRepository, StudentService, StorageService],
     controllers: [StudentController],

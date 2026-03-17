@@ -15,7 +15,7 @@ export interface IStudent {
     phone?: string;
     residentialAddress?: string;
     photo?: string;
-    faceProfileId?: string; // ref → PostgreSQL (se llena después con el microservicio)
+    hasFaceProfile: boolean; // ref → PostgreSQL (se llena después con el microservicio)
     state: boolean;
     createdAt?: Date;
     updatedAt?: Date;

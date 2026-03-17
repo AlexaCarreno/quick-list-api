@@ -52,9 +52,9 @@ export const StudentSchema = new Schema<IStudent>(
         photo: {
             type: String,
         },
-        faceProfileId: {
-            type: String,
-            default: null,
+        hasFaceProfile: {
+            type: Boolean,
+            default: false,
         },
         state: {
             type: Boolean,

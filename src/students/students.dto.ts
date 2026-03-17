@@ -107,3 +107,8 @@ export class UpdateStudentDto {
     @Transform(({ value }) => value === 'true' || value === true)
     removePhoto?: boolean;
 }
+
+export class RegisterFaceDto {
+    @ApiProperty({ type: 'string', format: 'binary' })
+    photo: any;
+}

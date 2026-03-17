@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     ConflictException,
     Injectable,
     NotFoundException,
@@ -13,12 +14,14 @@ import { StorageService } from '../common/service/storage.service';
 import { InjectConnection } from '@nestjs/mongoose';
 import { StudentRepository } from './students.repository';
 import { IStudent } from './students.interface';
+import { FaceService } from '../face/face.service';
 
 @Injectable()
 export class StudentService {
     constructor(
         private readonly studentRepository: StudentRepository,
         private readonly storageService: StorageService,
+        private readonly faceService: FaceService,
         @InjectConnection() private readonly connection: Connection,
     ) {}
 
@@ -174,5 +177,29 @@ export class StudentService {
         const student = await this.studentRepository.findById(id);
         if (!student) throw new NotFoundException('Estudiante no encontrado.');
         return this.studentRepository.updateById(id, { state: !student.state });
+    }
+
+    async registerFace(id: string, file: Express.Multer.File) {
+        const student = await this.studentRepository.findById(id);
+        if (!student) throw new NotFoundException('Estudiante no encontrado.');
+
+        if (!file) throw new BadRequestException('Se requiere una foto.');
+
+        await this.faceService.registerFace(id, file);
+
+        return this.studentRepository.updateById(id, { hasFaceProfile: true });
+    }
+
+    async getFaceStatus(id: string) {
+        const student = await this.studentRepository.findById(id);
+        if (!student) throw new NotFoundException('Estudiante no encontrado.');
+        return await this.faceService.getFaceStatus(id);
+    }
+
+    async deleteFaceProfile(id: string) {
+        const student = await this.studentRepository.findById(id);
+        if (!student) throw new NotFoundException('Estudiante no encontrado.');
+        await this.faceService.deleteFaceProfile(id);
+        return this.studentRepository.updateById(id, { hasFaceProfile: false });
     }
 }
