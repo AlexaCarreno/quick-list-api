@@ -31,8 +31,18 @@ export class GroupController {
         return await this.groupService.findAll(query);
     }
 
+    @Get('my-groups')
+    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.TEACHER])
+    @ApiOperation({ summary: 'Obtener grupos asignados al teacher' })
+    async getMyGroups(
+        @CurrentUser('userId') userId: string,
+        @Query() query: GetGroupsQueryDto,
+    ) {
+        return await this.groupService.findByTeacherId(userId, query);
+    }
+
     @Get(':id')
-    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN])
+    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN, RoleName.TEACHER])
     @ApiOperation({ summary: 'Obtener grupo por ID' })
     async findOne(@Param('id') id: string) {
         return await this.groupService.findById(id);

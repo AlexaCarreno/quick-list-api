@@ -17,6 +17,8 @@ import { UserSignupModule } from './user-signup/user-signup.module';
 import { UserModule } from './user/user.module';
 import { StudentGroupModule } from './student-group/student-group.module';
 import { FaceModule } from './face/face.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { StudentAttendanceModule } from './student-attendance/student-attendance.module';
 
 @Module({
     imports: [
@@ -37,6 +39,8 @@ import { FaceModule } from './face/face.module';
         AccountsModule,
         StudentGroupModule,
         FaceModule,
+        AttendanceModule,
+        StudentAttendanceModule,
     ],
     controllers: [],
     providers: [],

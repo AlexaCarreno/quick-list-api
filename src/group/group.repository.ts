@@ -83,4 +83,27 @@ export class GroupRepository {
     async deleteById(id: string, session?: ClientSession): Promise<void> {
         await this.groupModel.findByIdAndDelete(id, { session }).exec();
     }
+
+    async findByTeacherId(
+        teacherId: string,
+        query: GetGroupsQueryDto,
+    ): Promise<{ groups: IGroupWithTeacher[]; total: number }> {
+        const { limit = 10, offset = 0, status } = query;
+        const filter: Record<string, any> = { teacherId };
+        if (status) filter.status = status;
+
+        const [groups, total] = await Promise.all([
+            this.groupModel
+                .find(filter)
+                .populate('teacherId', 'name lastName email')
+                .skip(offset)
+                .limit(limit)
+                .sort({ createdAt: -1 })
+                .lean()
+                .exec(),
+            this.groupModel.countDocuments(filter).exec(),
+        ]);
+
+        return { groups: groups as IGroupWithTeacher[], total };
+    }
 }

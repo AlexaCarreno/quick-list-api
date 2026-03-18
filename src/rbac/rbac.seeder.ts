@@ -321,15 +321,15 @@ export class RbacSeeder {
                 // 'groups.update',
                 // 'groups.delete',
                 // 'students.create',
-                'students.access',
+                // 'students.access',
                 'students.read',
                 // 'students.update',
                 // 'students.delete',
-                // 'attendance.access',
+                'attendance.access',
                 'attendance.create',
                 'attendance.read',
                 'attendance.update',
-                // 'attendance.delete',
+                'attendance.delete',
             ];
 
             const permissionIds = docentePermissions

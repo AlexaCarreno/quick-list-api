@@ -124,4 +124,16 @@ export class GroupService {
 
         return { message: 'Grupo eliminado correctamente.' };
     }
+
+    async findByTeacherId(teacherId: string, query: GetGroupsQueryDto) {
+        const { groups, total } = await this.groupRepository.findByTeacherId(
+            teacherId,
+            query,
+        );
+        const { limit = 10, offset = 0 } = query;
+        return {
+            metadata: { total, limit, offset },
+            groups,
+        };
+    }
 }
