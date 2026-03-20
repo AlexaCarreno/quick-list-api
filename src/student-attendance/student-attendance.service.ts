@@ -141,7 +141,6 @@ export class StudentAttendanceService {
             throw new BadRequestException('La sesión ya está cerrada.');
         }
 
-        // Obtener IDs de estudiantes del grupo
         const { students } = await this.studentGroupRepository.findByGroupId(
             attendance.groupId.toString(),
             { limit: 1000, offset: 0 },
@@ -155,38 +154,43 @@ export class StudentAttendanceService {
             throw new BadRequestException('No hay estudiantes en el grupo.');
         }
 
-        // Llamar al microservicio de reconocimiento facial
         const result = await this.faceService.recognizeFace(file, studentIds);
 
-        if (!result.recognized || !result.student_id) {
-            return { recognized: false, message: 'Rostro no identificado.' };
+        if (!result.recognized || !result.results?.length) {
+            return {
+                recognized: false,
+                message: 'No se identificaron rostros.',
+            };
         }
 
-        // Marcar al estudiante como presente
-        const record =
-            await this.studentAttendanceRepository.findByAttendanceAndStudent(
-                attendanceId,
-                result.student_id,
-            );
+        // Procesar cada resultado reconocido
+        const recognized: string[] = [];
+        for (const r of result.results) {
+            if (!r.recognized || !r.student_id) continue;
 
-        if (!record) {
-            throw new NotFoundException(
-                'Estudiante no encontrado en esta sesión.',
-            );
+            const record =
+                await this.studentAttendanceRepository.findByAttendanceAndStudent(
+                    attendanceId,
+                    r.student_id,
+                );
+
+            if (!record) continue;
+
+            if (record.status === StudentAttendanceStatus.ABSENT) {
+                await this.studentAttendanceRepository.updateById(
+                    record._id!.toString(),
+                    {
+                        status: StudentAttendanceStatus.PRESENT,
+                        method: AttendanceMethod.FACIAL,
+                        recognitionTime: new Date(),
+                    },
+                );
+                recognized.push(r.student_id);
+            }
         }
 
-        // Solo actualizar si estaba ausente (no sobreescribir tardanza o justificado)
-        if (record.status === StudentAttendanceStatus.ABSENT) {
-            await this.studentAttendanceRepository.updateById(
-                record._id!.toString(),
-                {
-                    status: StudentAttendanceStatus.PRESENT,
-                    method: AttendanceMethod.FACIAL,
-                    recognitionTime: new Date(),
-                },
-            );
-
-            // Actualizar totalPresent
+        // Actualizar totalPresent
+        if (recognized.length > 0) {
             const totalPresent =
                 await this.studentAttendanceRepository.countPresentByAttendanceId(
                     attendanceId,
@@ -197,9 +201,10 @@ export class StudentAttendanceService {
         }
 
         return {
-            recognized: true,
-            student_id: result.student_id,
-            distance: result.distance,
+            recognized: recognized.length > 0,
+            total_detected: result.total_detected,
+            total_recognized: recognized.length,
+            student_ids: recognized,
         };
     }
 }
