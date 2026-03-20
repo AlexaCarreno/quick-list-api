@@ -28,7 +28,10 @@ export class StudentGroupController {
     constructor(private readonly studentGroupService: StudentGroupService) {}
 
     @Get()
-    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [RoleName.ADMIN])
+    @AuthPermissions(ResourceType.GROUPS, ActionType.READ, [
+        RoleName.ADMIN,
+        RoleName.TEACHER,
+    ])
     @ApiOperation({ summary: 'Listar estudiantes de un grupo' })
     async getGroupStudents(
         @Param('groupId') groupId: string,

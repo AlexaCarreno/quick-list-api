@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
     STUDENT_GROUP_COLLECTION_NAME,
@@ -20,7 +20,7 @@ import { StudentGroupService } from './student-group.service';
                 collection: STUDENT_GROUP_COLLECTION_NAME,
             },
         ]),
-        GroupModule, // exporta GroupRepository
+        forwardRef(() => GroupModule), // exporta GroupRepository
         StudentsModule, // exporta StudentRepository
     ],
     providers: [StudentGroupRepository, StudentGroupService],

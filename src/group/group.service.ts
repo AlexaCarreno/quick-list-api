@@ -8,11 +8,13 @@ import { Connection } from 'mongoose';
 import { CreateGroupDto, GetGroupsQueryDto, UpdateGroupDto } from './group.dto';
 import { GroupStatus, IGroup } from './group.interface';
 import { GroupRepository } from './group.repository';
+import { StudentGroupRepository } from '../student-group/student-group.repository';
 
 @Injectable()
 export class GroupService {
     constructor(
         private readonly groupRepository: GroupRepository,
+        private readonly studentGroupRepository: StudentGroupRepository,
         @InjectConnection() private readonly connection: Connection,
     ) {}
 
@@ -55,20 +57,37 @@ export class GroupService {
         const { groups, total } = await this.groupRepository.findAll(query);
         const { limit = 10, offset = 0 } = query;
 
+        const groupsWithCount = await Promise.all(
+            groups.map(async (group) => {
+                const { total: studentCount } =
+                    await this.studentGroupRepository.findByGroupId(
+                        (group._id as any).toString(),
+                        { limit: 1, offset: 0 },
+                    );
+                return { ...group, totalStudents: studentCount };
+            }),
+        );
+
         return {
             metadata: {
                 total,
                 limit,
                 offset,
             },
-            groups,
+            groups: groupsWithCount,
         };
     }
 
     async findById(id: string) {
         const group = await this.groupRepository.findByIdWithTeacher(id);
         if (!group) throw new NotFoundException('Grupo no encontrado.');
-        return group;
+
+        const { total: totalStudents } =
+            await this.studentGroupRepository.findByGroupId(id, {
+                limit: 1,
+                offset: 0,
+            });
+        return { ...group, totalStudents };
     }
 
     async update(id: string, dto: UpdateGroupDto) {
@@ -131,9 +150,22 @@ export class GroupService {
             query,
         );
         const { limit = 10, offset = 0 } = query;
+
+        // Agregar total de estudiantes por grupo
+        const groupsWithCount = await Promise.all(
+            groups.map(async (group) => {
+                const { total: studentCount } =
+                    await this.studentGroupRepository.findByGroupId(
+                        (group._id as any).toString(),
+                        { limit: 1, offset: 0 },
+                    );
+                return { ...group, totalStudents: studentCount };
+            }),
+        );
+
         return {
             metadata: { total, limit, offset },
-            groups,
+            groups: groupsWithCount,
         };
     }
 }
