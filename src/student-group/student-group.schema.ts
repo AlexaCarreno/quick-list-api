@@ -1,16 +1,18 @@
 import { Schema } from 'mongoose';
+import { GROUP_MODEL_NAME } from '../group/group.interface';
+import { STUDENT_MODEL_NAME } from '../students/students.interface';
 import { IStudentGroup } from './student-group.interface';
 
 export const StudentGroupSchema = new Schema<IStudentGroup>(
     {
         studentId: {
             type: Schema.Types.ObjectId,
-            ref: 'Student',
+            ref: STUDENT_MODEL_NAME,
             required: true,
         },
         groupId: {
             type: Schema.Types.ObjectId,
-            ref: 'Group',
+            ref: GROUP_MODEL_NAME,
             required: true,
         },
         allowed: {

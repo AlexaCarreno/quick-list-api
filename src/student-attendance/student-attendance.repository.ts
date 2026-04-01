@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
+import { GetStudentAttendancesQueryDto } from './student-attendance.dto';
 import {
     IStudentAttendance,
     IStudentAttendanceWithStudent,
     STUDENT_ATTENDANCE_MODEL_NAME,
 } from './student-attendance.interface';
-import { ClientSession, Model, Types } from 'mongoose';
-import { GetStudentAttendancesQueryDto } from './student-attendance.dto';
 
 @Injectable()
 export class StudentAttendanceRepository {
@@ -134,6 +134,34 @@ export class StudentAttendanceRepository {
     ): Promise<void> {
         await this.studentAttendanceModel
             .deleteMany({ attendanceId }, { session })
+            .exec();
+    }
+
+    async findByAttendanceIds(
+        attendanceIds: string[],
+    ): Promise<IStudentAttendance[]> {
+        return this.studentAttendanceModel
+            .find({
+                attendanceId: {
+                    $in: attendanceIds.map((id) => new Types.ObjectId(id)),
+                },
+            })
+            .lean()
+            .exec();
+    }
+
+    async findByStudentAndAttendanceIds(
+        studentId: string,
+        attendanceIds: string[],
+    ): Promise<IStudentAttendance[]> {
+        return this.studentAttendanceModel
+            .find({
+                studentId: new Types.ObjectId(studentId),
+                attendanceId: {
+                    $in: attendanceIds.map((id) => new Types.ObjectId(id)),
+                },
+            })
+            .lean()
             .exec();
     }
 }

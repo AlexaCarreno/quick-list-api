@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RoleRepository } from './roles/role.repository';
+import { ActionType, ResourceType } from './permission/permission.interface';
 import { PermissionRepository } from './permission/permission.repository';
 import { RolePermissionRepository } from './role-permission/role-permission.repository';
-import { ActionType, ResourceType } from './permission/permission.interface';
 import { RoleName } from './roles/role.interface';
+import { RoleRepository } from './roles/role.repository';
 
 @Injectable()
 export class RbacSeeder {
@@ -217,6 +217,27 @@ export class RbacSeeder {
                 resource: ResourceType.ATTENDANCE,
                 action: ActionType.MANAGE,
                 description: 'Full attendance management',
+            },
+
+            // reports
+
+            {
+                name: 'reports.access',
+                resource: ResourceType.REPORTS,
+                action: ActionType.ACCESS,
+                description: 'Access reports module'
+            },
+            {
+                name: 'reports.read',
+                resource: ResourceType.REPORTS,
+                action: ActionType.READ,
+                description: 'Read reports'
+            },
+            {
+                name: 'reports.create',
+                resource: ResourceType.REPORTS,
+                action: ActionType.CREATE,
+                description: 'Create reports '
             },
         ];
 

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
+import { GetGroupStudentsQueryDto } from './student-group.dto';
 import {
     IStudentGroup,
     IStudentGroupWithStudent,
     STUDENT_GROUP_MODEL_NAME,
 } from './student-group.interface';
-import { ClientSession, Model } from 'mongoose';
-import { GetGroupStudentsQueryDto } from './student-group.dto';
 
 @Injectable()
 export class StudentGroupRepository {
@@ -120,5 +120,29 @@ export class StudentGroupRepository {
         session?: ClientSession,
     ): Promise<IStudentGroup[]> {
         return await this.studentGroupModel.insertMany(data, { session });
+    }
+
+    async findAllByGroupId(groupId: string): Promise<{ studentGroups: any[] }> {
+        const studentGroups = await this.studentGroupModel
+            .find({
+                groupId: new Types.ObjectId(groupId), // ← era gruopId
+                allowed: true,
+            })
+            .populate('studentId', 'name lastName documentNumber photo')
+            .lean()
+            .exec();
+
+        return { studentGroups };
+    }
+
+    async findAllByStudentId(studentId: string): Promise<any[]> {
+        return this.studentGroupModel
+            .find({
+                studentId: new Types.ObjectId(studentId),
+                allowed: true,
+            })
+            .populate('groupId') // ← era gruopId
+            .lean()
+            .exec();
     }
 }

@@ -19,6 +19,7 @@ import { StudentGroupModule } from './student-group/student-group.module';
 import { FaceModule } from './face/face.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { StudentAttendanceModule } from './student-attendance/student-attendance.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
     imports: [
@@ -41,6 +42,7 @@ import { StudentAttendanceModule } from './student-attendance/student-attendance
         FaceModule,
         AttendanceModule,
         StudentAttendanceModule,
+        ReportsModule,
     ],
     controllers: [],
     providers: [],

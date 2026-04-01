@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ATTENDANCE_MODEL_NAME, IAttendance } from './attendance.interface';
-import { ClientSession, Model } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { GetAttendancesQueryDto } from './attendance.dto';
+import {
+    ATTENDANCE_MODEL_NAME,
+    AttendanceStatus,
+    IAttendance,
+} from './attendance.interface';
 
 @Injectable()
 export class AttendanceRepository {
@@ -69,5 +73,37 @@ export class AttendanceRepository {
 
     async deleteById(id: string, session?: ClientSession): Promise<void> {
         await this.attendanceModel.findByIdAndDelete(id, { session }).exec();
+    }
+
+    async findByGroupIdForReport(
+        groupId: string,
+        dateFilter: Record<string, Date>,
+    ): Promise<{ attendances: IAttendance[] }> {
+        const filter: Record<string, any> = {
+            groupId: new Types.ObjectId(groupId),
+            status: AttendanceStatus.CLOSED,
+        };
+
+        if (Object.keys(dateFilter).length > 0) {
+            filter.date = dateFilter;
+        }
+
+        const attendances = await this.attendanceModel
+            .find(filter)
+            .sort({ date: 1 })
+            .lean()
+            .exec();
+
+        return { attendances };
+    }
+
+    async findClosedByGroupId(groupId: string): Promise<IAttendance[]> {
+        return this.attendanceModel
+            .find({
+                groupId: new Types.ObjectId(groupId),
+                status: AttendanceStatus.CLOSED,
+            })
+            .lean()
+            .exec();
     }
 }
