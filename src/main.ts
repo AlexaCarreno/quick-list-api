@@ -22,7 +22,7 @@ async function bootstrap() {
     app.use('/storage', express.static(path.join(process.cwd(), 'storage')));
 
     app.enableCors({
-        origin: 'http://localhost:5173',
+        origin: ['http://localhost:5173', 'http://localhost:4173'],
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,

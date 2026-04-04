@@ -1,20 +1,16 @@
 // create-student.dto.ts
-import {
-    IsString,
-    IsNotEmpty,
-    IsEmail,
-    IsDateString,
-    Matches,
-    IsMongoId,
-    IsOptional,
-    Max,
-    IsInt,
-    Min,
-    IsBoolean,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Types } from 'mongoose';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import {
+    IsBoolean,
+    IsDateString,
+    IsEmail,
+    IsInt,
+    IsOptional,
+    IsString,
+    Max,
+    Min
+} from 'class-validator';
 
 export class GetStudentsQueryDto {
     @ApiPropertyOptional()

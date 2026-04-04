@@ -25,8 +25,8 @@ import { StudentRepository } from '../students/students.repository';
 const STATUS_MAP: Record<string, 'P' | 'A' | 'R' | 'J'> = {
     present: 'P',
     absent: 'A',
-    retarded: 'R',
-    justified: 'J',
+    late: 'R',
+    excused: 'J',
 };
 
 // Nombres de meses en español
@@ -56,7 +56,7 @@ export class ReportsService {
         private readonly studentAttendanceRepository: StudentAttendanceRepository,
         private readonly studentGroupRepository: StudentGroupRepository,
         private readonly studentRepository: StudentRepository,
-    ) {}
+    ) { }
 
     async getGroupReport(
         groupId: string,
@@ -64,6 +64,11 @@ export class ReportsService {
     ): Promise<GroupReportResponse> {
         if (!Types.ObjectId.isValid(groupId)) {
             throw new BadRequestException('ID de grupo inválido.');
+        }
+
+        // Al inicio de getGroupReport, antes de buildDateFilter
+        if (query.month && (query.from || query.to)) {
+            throw new BadRequestException('No puedes usar month junto con from/to.');
         }
 
         const group = await this.groupRepository.findById(groupId);
@@ -151,15 +156,23 @@ export class ReportsService {
     private buildDateFilter(query: GroupReportQueryDto): Record<string, Date> {
         const filter: Record<string, Date> = {};
 
-        if (query.from) {
-            const from = new Date(query.from);
-            from.setUTCHours(0, 0, 0, 0);
+        if (query.month) {
+            const [year, month] = query.month.split('-').map(Number);
+            const from = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+            const to = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)); // día 0 del mes siguiente = último día del mes actual
             filter.$gte = from;
-        }
-        if (query.to) {
-            const to = new Date(query.to);
-            to.setUTCHours(23, 59, 59, 999);
             filter.$lte = to;
+        } else {
+            if (query.from) {
+                const from = new Date(query.from);
+                from.setUTCHours(0, 0, 0, 0);
+                filter.$gte = from;
+            }
+            if (query.to) {
+                const to = new Date(query.to);
+                to.setUTCHours(23, 59, 59, 999);
+                filter.$lte = to;
+            }
         }
 
         return filter;
@@ -234,10 +247,7 @@ export class ReportsService {
         const studentId = student._id.toString();
         const enrolledAt = new Date(studentGroup.createdAt);
 
-        const attendanceMap: Record<
-            string,
-            'P' | 'A' | 'R' | 'J' | 'N/A' | null
-        > = {};
+        const attendanceMap: Record<string, 'P' | 'A' | 'R' | 'J' | 'N/A' | null> = {};
         let present = 0;
         let absent = 0;
         let retarded = 0;
@@ -252,8 +262,7 @@ export class ReportsService {
 
             applicableSessions++;
             const status =
-                sessionStudentMap.get(session.sessionId)?.get(studentId) ??
-                null;
+                sessionStudentMap.get(session.sessionId)?.get(studentId) ?? null;
             attendanceMap[session.sessionId] = status;
 
             if (status === 'P') present++;
@@ -265,6 +274,7 @@ export class ReportsService {
         const percentage = this.calculatePercentage(
             present,
             retarded,
+            justified,        // ← nuevo parámetro
             applicableSessions,
         );
 
@@ -275,7 +285,7 @@ export class ReportsService {
             documentNumber: student.documentNumber,
             attendanceMap,
             summary: {
-                present,
+                present: present + retarded + justified, // ← asistió de alguna forma
                 absent,
                 retarded,
                 justified,
@@ -310,7 +320,7 @@ export class ReportsService {
             }
 
             const presentCount = [...map.values()].filter(
-                (v) => v === 'P' || v === 'R',
+                (v) => v === 'P' || v === 'R' || v === 'J',
             ).length;
 
             averages[session.sessionId] = Math.round(
@@ -333,11 +343,13 @@ export class ReportsService {
     private calculatePercentage(
         present: number,
         retarded: number,
+        justified: number,        // ← nuevo parámetro
         applicableSessions: number,
     ): number {
-        if (applicableSessions === 0) return 0;
+        const effectiveSessions = applicableSessions - justified; // J no penaliza
+        if (effectiveSessions === 0) return 0;
         const effective = present + retarded * 0.5;
-        return Math.round((effective / applicableSessions) * 100);
+        return Math.round((effective / effectiveSessions) * 100);
     }
 
     private resolveAttendanceStatus(
@@ -507,18 +519,21 @@ export class ReportsService {
 
         let present = 0;
         let retarded = 0;
+        let justified = 0;
         let absent = 0;
 
         for (const session of applicableSessions) {
             const status = statusMap.get(session._id!.toString()) ?? null;
             if (status === 'P') present++;
             else if (status === 'R') retarded++;
+            else if (status === 'J') justified++;
             else absent++; // null y 'A' = ausente
         }
 
         const percentage = this.calculatePercentage(
             present,
             retarded,
+            justified,
             applicableSessions.length,
         );
 
@@ -526,7 +541,7 @@ export class ReportsService {
             groupId,
             subject: group.subject,
             referenceCode: group.referenceCode,
-            present: present + retarded, // retardos cuentan como presencia
+            present: present + retarded + justified,
             absent,
             totalSessions: applicableSessions.length,
             percentage,

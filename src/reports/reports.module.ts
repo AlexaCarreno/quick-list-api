@@ -6,6 +6,7 @@ import { GroupModule } from '../group/group.module';
 import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
 import { StudentsModule } from '../students/students.module';
+import { ReportsExportService } from './reports-export.service';
 
 @Module({
     imports: [
@@ -15,7 +16,7 @@ import { StudentsModule } from '../students/students.module';
         GroupModule,
         StudentsModule,
     ],
-    providers: [ReportsService],
+    providers: [ReportsService, ReportsExportService],
     controllers: [ReportsController],
 })
-export class ReportsModule {}
+export class ReportsModule { }
