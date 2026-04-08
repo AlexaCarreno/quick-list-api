@@ -4,17 +4,17 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { StorageService } from '../common/service/storage.service';
+import { FaceService } from '../face/face.service';
 import {
     CreateStudentDto,
     GetStudentsQueryDto,
     UpdateStudentDto,
 } from './students.dto';
-import { Connection } from 'mongoose';
-import { StorageService } from '../common/service/storage.service';
-import { InjectConnection } from '@nestjs/mongoose';
-import { StudentRepository } from './students.repository';
 import { IStudent } from './students.interface';
-import { FaceService } from '../face/face.service';
+import { StudentRepository } from './students.repository';
 
 @Injectable()
 export class StudentService {
@@ -23,7 +23,7 @@ export class StudentService {
         private readonly storageService: StorageService,
         private readonly faceService: FaceService,
         @InjectConnection() private readonly connection: Connection,
-    ) {}
+    ) { }
 
     async create(dto: CreateStudentDto, file?: Express.Multer.File) {
         // Verificar duplicados antes de abrir transacción
