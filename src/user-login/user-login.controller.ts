@@ -22,7 +22,7 @@ import { PublicRoute } from '../common/decorators/public-route.decorator';
 @ApiTags('User Sign-in')
 @Controller('auth')
 export class UserLoginController {
-    constructor(private readonly userLoginService: UserLoginService) {}
+    constructor(private readonly userLoginService: UserLoginService) { }
 
     @Post('/login')
     @PublicRoute()
@@ -38,11 +38,13 @@ export class UserLoginController {
 
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'strict',
+            secure: false,
+            sameSite: 'lax',
             path: '/',
             maxAge: 1000 * 60 * 60 * 24 * 7,
         });
+
+        console.log("req.cookies:", req.cookies);
 
         return { accessToken };
     }
@@ -63,8 +65,8 @@ export class UserLoginController {
 
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'strict',
+            secure: false,
+            sameSite: 'lax',
             path: '/',
             maxAge: 1000 * 60 * 60 * 24 * 7,
         });
@@ -94,8 +96,8 @@ export class UserLoginController {
 
         res.clearCookie('refresh_token', {
             httpOnly: true,
-            secure: true,
-            sameSite: 'strict',
+            secure: false,
+            sameSite: 'lax',
             path: '/',
         });
 

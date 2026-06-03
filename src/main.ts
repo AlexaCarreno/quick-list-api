@@ -1,7 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/errors/global.filter';
 import { StandardResponseInterceptor } from './common/interceptors/standard-response.interceptor';
@@ -22,9 +22,16 @@ async function bootstrap() {
     app.use('/storage', express.static(path.join(process.cwd(), 'storage')));
 
     app.enableCors({
-        origin: ['http://localhost:5173', 'http://localhost:4173'],
+        origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'Accept',
+            'Origin',
+            'X-Requested-With',
+            'Content-Disposition'
+        ],
         credentials: true,
     });
     app.use(cookieParser());
